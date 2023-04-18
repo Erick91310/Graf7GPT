@@ -1,0 +1,213 @@
+
+import tkinter as tk
+from PIL import Image, ImageTk
+
+# Création de la fenêtre principale
+root = tk.Tk()
+root.title("Editeur de Grafcet")
+root.geometry("800x800")
+
+# Création de la grille de sélection
+selection_grid = tk.Frame(root, bg="white", highlightthickness=2, highlightbackground="black")
+selection_grid.grid(row=0, column=0, padx=10, pady=10)
+
+# Création de la grille de travail
+work_grid = tk.Canvas(root, bg="light grey", width=640, height=640, highlightthickness=1)
+work_grid.grid(row=0, column=1, padx=10, pady=10)
+
+# Variables pour les icônes
+icon_etape = tk.PhotoImage(file="icons/icon_etape.png")
+icon_transition = tk.PhotoImage(file="icons/icon_transition.png")
+
+# Variables pour la sélection
+selected_icon = None
+last_selected = None
+
+# Fonction pour changer l'icône sélectionné
+def select_icon(icon):
+    global selected_icon
+    selected_icon = icon
+
+# Fonction pour placer l'icône sélectionné sur la grille de travail
+def place_icon(event):
+    global last_selected
+    if selected_icon:
+        x = event.x // 16 * 16 + 8
+        y = event.y // 16 * 16 + 8
+        if last_selected != (x,y):
+            last_selected = (x,y)
+            work_grid.create_image(x, y, image=selected_icon)
+
+# Fonction pour lier la touche "e" à l'icône étape et "t" à l'icône transition
+def key_press(event):
+    global selected_icon
+    if event.char == "e":
+        select_icon(icon_etape)
+    elif event.char == "t":
+        select_icon(icon_transition)
+
+# Lier les fonctions aux événements
+selection_grid.bind("<Button-1>", lambda e: select_icon(icon_etape))
+selection_grid.bind("<Button-2>", lambda e: select_icon(icon_transition))
+work_grid.bind("<Button-1>", place_icon)
+root.bind("<Key>", key_press)
+
+
+# Chargement des images
+icon_etape = ImageTk.PhotoImage(Image.open("icons/icon_etape.png"))
+icon_transition = ImageTk.PhotoImage(Image.open("icons/icon_transition.png"))
+icon_liaison = ImageTk.PhotoImage(Image.open("icons/icon_liaison.png"))
+icon_liaison_bas_gauche = ImageTk.PhotoImage(Image.open("icons/icon_liaison_bas_gauche.png"))
+icon_liaison_bas_droite = ImageTk.PhotoImage(Image.open("icons/icon_liaison_bas_droite.png"))
+icon_liaison_haut_droite = ImageTk.PhotoImage(Image.open("icons/icon_liaison_haut_droite.png"))
+icon_liaison_haut_gauche = ImageTk.PhotoImage(Image.open("icons/icon_liaison_haut_gauche.png"))
+
+
+for row in range(2):
+    for col in range(3):
+        frame = tk.Frame(selection_grid, width=32, height=32, bg="blue", highlightthickness=2, highlightbackground="blue")
+        frame.grid(row=row, column=col, padx=2, pady=2)
+
+        if col == 0:
+            tk.Label(frame, image=icon_etape).pack()
+        elif col == 1 and row == 0:
+            tk.Label(frame, image=icon_transition).pack()
+        elif col == 2 and row == 0:
+            tk.Label(frame, image=icon_liaison).pack()
+        elif col == 1 and row == 1:
+            tk.Label(frame, image=icon_liaison_bas_gauche).pack()
+        elif col == 0 and row == 1:
+            tk.Label(frame, image=icon_liaison_haut_gauche).pack()
+        elif col == 2 and row == 1:
+            tk.Label(frame, image=icon_liaison_bas_droite).pack()
+        elif col == 1 and row == 0:
+            tk.Label(frame, image=icon_liaison_haut_droite).pack()
+
+
+# Lancement de la boucle principale
+"""root.mainloop()"""
+
+
+# Création de la zone de dessin
+canvas = tk.Canvas(root, bg="white", width=500, height=400)
+# canvas.pack(side=tk.RIGHT, padx=10, pady=10)
+canvas.grid(row=0, column=1, padx=10, pady=10)
+
+# Définition des icônes disponibles
+icons = {
+    "icon_etape": icon_etape,
+    "icon_transition": icon_transition,
+    "icon_liaison": icon_liaison,
+    "icon_liaison_bas_gauche": icon_liaison_bas_gauche,
+    "icon_liaison_bas_droite": icon_liaison_bas_droite,
+    "icon_liaison_haut_droite": icon_liaison_haut_droite,
+    "icon_liaison_haut_gauche": icon_liaison_haut_gauche
+}
+
+
+# Événement pour sélectionner l'icône courante
+def select_icon(icon):
+    global current_icon
+    current_icon = icon
+
+# Événement pour dessiner un icône sur la zone de dessin
+def draw_icon(event):
+    global current_icon
+    if current_icon is not None:
+        x, y = event.x, event.y
+        canvas.create_image(x, y, image=current_icon)
+
+# Création de la zone de dessin
+canvas = tk.Canvas(root, width=400, height=400, bg="white")
+#canvas.pack(side=tk.TOP, padx=10, pady=10)
+canvas.grid(row=1, column=1, padx=10, pady=10)
+
+
+
+# Liaison des événements de souris avec la zone de dessin
+canvas.bind("<Button-1>", draw_icon)
+
+# Démarrage de la boucle principale
+root.mainloop()
+
+
+# Fonction pour supprimer une icône de la grille de travail
+def remove_icon(event):
+    global last_selected, work_grid
+    # Récupération de la position de la souris
+    x, y = event.x, event.y
+    # Recherche de l'icône la plus proche de la position de la souris
+    closest_item = work_grid.find_closest(x, y)
+    # Suppression de l'icône
+    work_grid.delete(closest_item)
+    # Suppression de la sélection précédente
+    if last_selected:
+        work_grid.itemconfig(work_grid.find_closest(*last_selected), outline="black", width=1)
+        last_selected = None
+
+# Fonction pour sélectionner une icône dans la grille de travail
+def select_item(event):
+    global last_selected, work_grid
+    # Récupération de la position de la souris
+    x, y = event.x, event.y
+    # Recherche de l'icône la plus proche de la position de la souris
+    closest_item = work_grid.find_closest(x, y)
+    # Mise en évidence de l'icône sélectionnée
+    work_grid.itemconfig(closest_item, outline="red", width=2)
+    # Sauvegarde de la position de l'icône sélectionnée
+    last_selected = work_grid.coords(closest_item)
+
+# Définition de la fonction pour ajouter une icône à la zone de dessin
+def add_icon(event):
+    if current_icon:
+        x = event.x - current_icon.width() // 2
+        y = event.y - current_icon.height() // 2
+        canvas.create_image(x, y, image=current_icon)
+
+
+# Ajout des bindings
+work_grid.bind("<Button-1>", add_icon)
+work_grid.bind("<Button-3>", remove_icon)
+work_grid.bind("<Button-2>", select_item)
+
+# Lancement de la boucle principale
+# root.mainloop()
+
+# Ajout de l'icône dans la grille de travail
+if selected_icon == icon_etape:
+    item = work_grid.create_image(col*32+16, row*32+16, image=icon_etape, anchor="center")
+elif selected_icon == icon_transition:
+    item = work_grid.create_image(col*32+16, row*32+16, image=icon_transition, anchor="center")
+elif selected_icon == icon_liaison_haut_gauche:
+    item = work_grid.create_image(col*32+16, row*32+16, image=icon_liaison_haut_gauche, anchor="center")
+elif selected_icon == icon_liaison_bas_gauche:
+    item = work_grid.create_image(col*32+16, row*32+16, image=icon_liaison_bas_gauche, anchor="center")
+elif selected_icon == icon_liaison_bas_droite:
+    item = work_grid.create_image(col*32+16, row*32+16, image=icon_liaison_bas_droite, anchor="center")
+elif selected_icon == icon_liaison_haut_droite:
+    item = work_grid.create_image(col*32+16, row*32+16, image=icon_liaison_haut_droite, anchor="center")
+elif selected_icon == icon_liaison_haut_gauche:
+    item = work_grid.create_image(col*32+16, row*32+16, image=icon_liaison_haut_gauche, anchor="center")
+
+# Mémorisation de la sélection
+last_selected = (x, y)
+work_grid.itemconfig(item, outline="red", width=3)
+
+# Bind de la fonction add_icon à un clic gauche de souris sur la grille de travail
+work_grid.bind("<Button-1>", add_icon)
+
+# Création d'une frame pour les icônes
+icons_frame = tk.Frame(root, bg="white", height=50)
+icons_frame.pack(fill="x")
+
+# Création des boutons pour sélectionner les icônes
+tk.Button(icons_frame, image=icon_etape, command=lambda: select_icon(icon_etape)).pack(side="left", padx=5, pady=5)
+tk.Button(icons_frame, image=icon_transition, command=lambda: select_icon(icon_transition)).pack(side="left", padx=5, pady=5)
+tk.Button(icons_frame, image=icon_liaison_haut_gauche, command=lambda: select_icon(icon_liaison_haut_gauche)).pack(side="left", padx=5, pady=5)
+tk.Button(icons_frame, image=icon_liaison_bas_gauche, command=lambda: select_icon(icon_liaison_bas_gauche)).pack(side="left", padx=5, pady=5)
+tk.Button(icons_frame, image=icon_liaison_bas_droite, command=lambda: select_icon(icon_liaison_bas_droite)).pack(side="left", padx=5, pady=5)
+tk.Button(icons_frame, image=icon_liaison_haut_droite, command=lambda: select_icon(icon_liaison_haut_droite)).pack(side="left", padx=5, pady=5)
+tk.Button(icons_frame, image=icon_liaison_haut_gauche, command=lambda: select_icon(icon_liaison_haut_gauche)).pack(side="left", padx=5, pady=5)
+
+# Boucle principale
+root.mainloop()
